@@ -1,0 +1,173 @@
+/**
+ * ============================================================
+ * © 2025 Botfizz
+ * Designed and Developed by: Hanzala Zaheer & Waleed Shams
+ * Project: University of Gujrat Capstone Project
+ * Website: https://botfizz.com
+ * Contact: support@botfizz.com
+ * ============================================================
+ */
+
+import { createContext, useContext, ReactNode } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useLocation } from "wouter";
+import { AppSettings, CountryCurrency, SubscriptionResponse } from "@/types/types";
+
+interface User {
+  createdBy: any;
+  id: string;
+  username: string;
+  email: string;
+  firstName: string;
+  lastName?: string;
+  role: string;
+  permissions: string[];
+  avatar?: string;
+  createdAt?: string;
+  
+}
+
+interface BrandSettings {
+  title: string;
+  tagline: string;
+  currency: string;
+  country: string;
+  logo: string;
+  favicon: string;
+  updatedAt: string;
+}
+
+interface AuthContextType {
+  user: User | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  isBrandSettingsLoading: boolean;
+  currency: string; // Direct access to currency
+  logout: () => void;
+  currencySymbol: string | undefined;
+  userPlans: any[];  
+  isUserPlansLoading: boolean;
+}
+
+const AuthContext = createContext<AuthContextType | null>(null);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [, setLocation] = useLocation();
+
+  const { data: user, isLoading } = useQuery({
+    queryKey: ["/api/auth/me"],
+    queryFn: async () => {
+      try {
+        const response = await fetch("/api/auth/me", {
+          credentials: "include",
+        });
+        if (!response.ok) {
+          if (response.status === 401) {
+            return null;
+          }
+          throw new Error("Failed to fetch user");
+        }
+        return response.json();
+      } catch (error) {
+        console.error("Auth check failed:", error);
+        return null;
+      }
+    },
+    retry: false,
+  });
+
+
+const {
+    data: userPlans,
+    isLoading: isUserPlansLoading
+  } = useQuery<SubscriptionResponse>({
+    queryKey: [`api/subscriptions/user/${user?.id}`],
+    queryFn: () =>
+      apiRequest("GET", `api/subscriptions/user/${user?.id}`).then((res) =>
+        res.json()
+      ),
+    enabled: !!user?.id,
+  });
+
+
+  // Brand Settings Query
+  const { data: brandSettings, isLoading: isBrandSettingsLoading } =
+    useQuery<AppSettings>({
+      queryKey: ["/api/brand-settings"],
+      queryFn: async () => {
+        const response = await fetch("/api/brand-settings");
+        if (!response.ok) {
+          throw new Error("Failed to fetch brand settings");
+        }
+        return response.json();
+      },
+      staleTime: 5 * 60 * 1000,
+      retry: 1,
+    });
+
+  const { data: countryCurrency } = useQuery<CountryCurrency[]>({
+    queryKey: ["/api/auth/country-data"],
+    queryFn: async () => {
+      const response = await fetch("/api/auth/country-data");
+      if (!response.ok) {
+        throw new Error("Failed to fetch country data");
+      }
+      return response.json();
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const getCurrencyByCode = () => {
+    return countryCurrency?.find(
+      (item) => item.currency_code === brandSettings?.currency
+    );
+  };
+
+  const currency = getCurrencyByCode();
+
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", "/api/auth/logout");
+    },
+    onSuccess: () => {
+      // SECURITY FIX: Clear ALL cached data to prevent cross-user data leakage.
+      // Previously only /api/auth/me was cleared, leaving stale dashboard/analytics
+      // data from the previous user visible on the next login.
+      queryClient.clear();
+      setLocation("/");
+    },
+  });
+
+  const logout = () => {
+    logoutMutation.mutate();
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user: user || null,
+        isLoading,
+        isAuthenticated: !!user,
+
+        isBrandSettingsLoading,
+        currency: brandSettings?.currency || "INR",
+        currencySymbol: currency?.symbol,
+        logout,
+        userPlans: userPlans || [],
+        isUserPlansLoading,
+
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+}

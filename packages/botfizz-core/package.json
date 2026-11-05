@@ -1,0 +1,21 @@
+{
+  "name": "@botfizz/core",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Core utilities and branding for Botfizz WhatsApp SaaS Platform",
+  "main": "index.ts",
+  "types": "index.ts",
+  "author": "Hanzala Zaheer & Waleed Shams <support@botfizz.com>",
+  "license": "UNLICENSED",
+  "homepage": "https://botfizz.com",
+  "repository": {
+    "type": "git",
+    "url": "https://botfizz.com"
+  },
+  "keywords": [
+    "botfizz",
+    "whatsapp",
+    "saas",
+    "marketing"
+  ]
+}
