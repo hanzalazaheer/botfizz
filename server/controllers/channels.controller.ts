@@ -14,7 +14,6 @@ import { storage } from '../storage';
 import { insertChannelSchema, Channel, whatsappBusinessAccountsConfig, channelSignupLogs, channels, users } from '@shared/schema';
 import { AppError, asyncHandler } from '../middlewares/error.middleware';
 import type { RequestWithChannel } from '../middlewares/channel.middleware';
-import fetch from "node-fetch";
 import { db } from '../db';
 import { eq, ne, desc, like, or, and, sql, count } from 'drizzle-orm';
 import { getOAuthError } from '@shared/whatsapp-error-codes';

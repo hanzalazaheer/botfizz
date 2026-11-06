@@ -12,7 +12,7 @@ import { createContext, useContext, ReactNode } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
-import { AppSettings, CountryCurrency, SubscriptionResponse } from "@/types/types";
+import { AppSettings, CountryCurrency } from "@/types/types";
 
 interface User {
   createdBy: any;
@@ -46,8 +46,6 @@ interface AuthContextType {
   currency: string; // Direct access to currency
   logout: () => void;
   currencySymbol: string | undefined;
-  userPlans: any[];  
-  isUserPlansLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -78,17 +76,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
 
-const {
-    data: userPlans,
-    isLoading: isUserPlansLoading
-  } = useQuery<SubscriptionResponse>({
-    queryKey: [`api/subscriptions/user/${user?.id}`],
-    queryFn: () =>
-      apiRequest("GET", `api/subscriptions/user/${user?.id}`).then((res) =>
-        res.json()
-      ),
-    enabled: !!user?.id,
-  });
 
 
   // Brand Settings Query
@@ -154,8 +141,6 @@ const {
         currency: brandSettings?.currency || "INR",
         currencySymbol: currency?.symbol,
         logout,
-        userPlans: userPlans || [],
-        isUserPlansLoading,
 
       }}
     >

@@ -42,7 +42,6 @@ import NotificationTemplatesSettings from "@/components/settings/NotificationTem
 import NotificationPreferences from "@/components/settings/NotificationPreferences";
 import LanguageManagement from "@/pages/LanguageManagement";
 import Logs from "@/pages/logs";
-import BillingSubscriptionPage from "@/components/billing-subscription-page";
 import UserSupportTicketsNew from "@/pages/user-support-tickets";
 import TeamPage from "@/pages/team";
 
@@ -179,11 +178,6 @@ export default function Settings() {
                     <span>Message Logs</span>
                   </TabsTrigger>
 
-                  <TabsTrigger value="billing" className={tabTriggerClass}>
-                    <CreditCard className="w-4 h-4 shrink-0" />
-                    <span>Billing & Membership</span>
-                  </TabsTrigger>
-
                   <TabsTrigger value="support" className={tabTriggerClass}>
                     <Headphones className="w-4 h-4 shrink-0" />
                     <span>Support</span>
@@ -249,10 +243,6 @@ export default function Settings() {
 
               <TabsContent value="message_logs">
                 <Logs embedded={true} />
-              </TabsContent>
-
-              <TabsContent value="billing">
-                <BillingSubscriptionPage embedded={true} />
               </TabsContent>
 
               <TabsContent value="support">

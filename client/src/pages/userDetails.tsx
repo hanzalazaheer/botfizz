@@ -26,7 +26,6 @@ import Contacts from "@/components/user-details/Contacts";
 import { useRoute } from "wouter";
 import Templates from "@/components/user-details/Templates";
 import Campaigns from "@/components/user-details/Campaigns";
-import Subscriptions from "@/components/user-details/Subscriptions";
 
 interface UserType {
   id: string;
@@ -99,14 +98,6 @@ export default function UserDetails() {
               <SettingsIcon className="w-4 h-4" />
               <span>Campaigns</span>
             </TabsTrigger>
-
-            <TabsTrigger
-              value="subscriptions"
-              className="flex items-center space-x-2"
-            >
-              <SettingsIcon className="w-4 h-4" />
-              <span>Subscriptions</span>
-            </TabsTrigger>
           </TabsList>
 
           {/* Channels Tab */}
@@ -132,11 +123,6 @@ export default function UserDetails() {
           {/* Campaigns Tab */}
           <TabsContent value="campaigns">
             <Campaigns userId={userId} />
-          </TabsContent>
-
-          {/* Subscriptions Tab */}
-          <TabsContent value="subscriptions">
-            <Subscriptions userId={userId} />
           </TabsContent>
         </Tabs>
       </main>

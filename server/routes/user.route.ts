@@ -13,7 +13,6 @@ import { botfizzLogger, HTTP_STATUS } from "@botfizz/core";
 import {
   getAllUsers,
   getUserById,
-  createUser,
   updateUser,
   deleteUser,
   updateUserStatus,
@@ -38,7 +37,6 @@ export function userRoutes(app: Express) {
   app.put("/api/user/status/:id", requireAuth, SA, updateUserStatus);
 
   // Self-service (no role required, just auth where needed)
-  app.post("/api/users/create", createUser);          // public registration
   app.post("/api/users/verifyEmail", verifyEmailOTP); // public email verification
   app.post("/api/users/resend-otp", resendOTP);       // public OTP resend
   app.put("/api/users/:id", requireAuth, updateUser); // authenticated self-update

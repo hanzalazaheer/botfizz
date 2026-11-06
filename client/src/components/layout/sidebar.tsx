@@ -10,7 +10,6 @@
 
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { MdOutlinePayment } from "react-icons/md";
 import {
   LayoutDashboard,
   Users,
@@ -43,12 +42,8 @@ import { useTranslation } from "@/lib/i18n";
 import { LanguageSelector } from "@/components/language-selector";
 import { useAuth } from "@/contexts/auth-context";
 // import logo from "../../images/logo1924.jpg";
-import { GiUpgrade } from "react-icons/gi";
-import { RiSecurePaymentFill } from "react-icons/ri";
-import { AiOutlineTransaction } from "react-icons/ai";
 import { MdOutlineSupportAgent, MdGroups } from "react-icons/md";
 import { useSidebar } from "@/contexts/sidebar-context";
-import { AdminCreditBox } from "../AdminCreditBox";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppSettings } from "@/types/types";
 import {
@@ -161,20 +156,6 @@ function getNavItems(role: string): NavItem[] {
       // },
 
       {
-        href: "/plans",
-        icon: Bell,
-        labelKey: "navigation.plans",
-        color: "text-blue-400",
-        allowedRoles: ["superadmin"],
-      },
-      {
-        href: "/gateway",
-        icon: Bell,
-        labelKey: "navigation.plans",
-        color: "text-blue-400",
-        allowedRoles: ["superadmin"],
-      },
-      {
         href: "/languages",
         icon: Globe,
         labelKey: "navigation.languages",
@@ -278,22 +259,6 @@ function getNavItems(role: string): NavItem[] {
       //   allowedRoles: ["team"],
       // },
 
-      {
-        href: "/plans",
-        icon: Bell,
-        labelKey: "navigation.plans",
-        color: "text-blue-400",
-        requiredPrefix: "plans.",
-        allowedRoles: ["team"],
-      },
-      {
-        href: "/gateway",
-        icon: Bell,
-        labelKey: "navigation.plans",
-        color: "text-blue-400",
-        requiredPrefix: "gateway.",
-        allowedRoles: ["team"],
-      },
     ];
   }
 }
@@ -351,35 +316,10 @@ const sidebarItemsCategories = [
     color: "text-pink-400",
   },
   {
-    name: "navigation.subscription_plans",
-    icon: MdOutlinePayment,
-    path: "/plans",
-    color: "text-blue-400",
-  },
-  {
-    name: "navigation.master_subscriptions",
-    icon: CheckCircle,
-    path: "/master-subscriptions",
-    badge: "",
-    color: "text-green-600",
-  },
-  {
-    name: "navigation.transactions_logs",
-    icon: AiOutlineTransaction,
-    path: "/transactions-logs",
-    color: "text-[#00a63e]",
-  },
-  {
     name: "navigation.message_logs",
     icon: MessageSquare,
     path: "/message-logs",
     color: "text-cyan-600",
-  },
-  {
-    name: "navigation.payment_gateway",
-    icon: RiSecurePaymentFill,
-    path: "/gateway",
-    color: "text-[#ffb900]",
   },
   {
     name: "navigation.support_tickets",
@@ -711,12 +651,6 @@ export default function Sidebar() {
             ""
           )} */}
 
-          {/* {isAdmin && (
-            <div className="px-3 py-2">
-              <AdminCreditBox />
-            </div>
-          )} */}
-
           {/* Smaller Toggle Button with Green Color */}
           {isAdmin && (
             <div className="p-2 border-t border-gray-100">
@@ -811,11 +745,6 @@ export default function Sidebar() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                {isAdmin && (
-                  <div className="px-3 py-2">
-                    <AdminCreditBox />
-                  </div>
-                )}
                 <DropdownMenuLabel>{t("common.myAccount")}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>

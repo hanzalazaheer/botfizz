@@ -132,7 +132,7 @@ const ConversationListItem = ({
             </p>
           </div>
 
-          {conversation.unreadCount && conversation.unreadCount > 0 && (
+          {(conversation.unreadCount ?? 0) > 0 && (
             <Badge className="ml-1 bg-green-500 hover:bg-green-500 text-white text-[10px] h-5 min-w-[20px] flex items-center justify-center rounded-full px-1.5 font-semibold flex-shrink-0">
               {conversation.unreadCount}
             </Badge>

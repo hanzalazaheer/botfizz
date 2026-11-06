@@ -44,8 +44,17 @@ class ErrorBoundary extends React.Component<
   }
 }
 
-createRoot(document.getElementById("root")!).render(
-  <ErrorBoundary>
-    <App />
-  </ErrorBoundary>
-);
+async function start() {
+  if (import.meta.env.VITE_DEMO_MODE === "true") {
+    const { installDemoApi } = await import("./demo/api");
+    await installDemoApi();
+  }
+
+  createRoot(document.getElementById("root")!).render(
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  );
+}
+
+start();

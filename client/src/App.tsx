@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useEffect } from "react";
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -19,6 +19,7 @@ import { UnreadCountProvider } from "@/contexts/UnreadCountContext";
 import { AuthProvider, useAuth } from "@/contexts/auth-context";
 import { SocketProvider } from "./contexts/socket-context";
 import { useI18n } from "@/lib/i18n";
+import { markExplored } from "@/lib/explored";
 import NotFound from "@/pages/not-found";
 import LoginPage from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
@@ -39,12 +40,7 @@ import AddChatbotBuilder from "./pages/add-chatbot-builder";
 import WidgetBuilder from "./pages/widget-builder";
 import Websites from "./pages/websites";
 import Home from "./pages/Home";
-import Header from "./components/Header";
-import Footer from "./components/Footer";
-import Signup from "./pages/Signup";
 import LoadingAnimation from "./components/LoadingAnimation";
-import Plans from "./pages/plans";
-import GatewaySettings from "./pages/GatewaySettings";
 import BotFlowBuilder from "./pages/BotFlowBuilder";
 import Workflows from "./pages/Workflows";
 import AIAssistant from "./pages/AIAssistant";
@@ -63,23 +59,13 @@ import Notifications from "./pages/Notifications";
 import UserNotifications from "./pages/UserNotifications";
 import ChatHub from "./pages/ChatHub";
 import User from "./pages/users";
-import TransactionsPage from "./pages/transactions-page";
 import ContactsManagements from "./pages/contacts-managements";
 import SupportTicketsNew from "./pages/support-tickets";
 import userDetails from "./pages/userDetails";
 import UserSupportTicketsNew from "./pages/user-support-tickets";
-import BillingSubscriptionPage from "./components/billing-subscription-page";
 import GroupsUI from "./pages/group-list";
-import AllSubscriptionsPage from "./pages/masterSubscriptions";
 import MinimalLoader from "./components/MinimalLoader";
-import { TermsPage } from "./pages/TermsPage";
-import { PrivacyPage } from "./pages/PrivacyPage";
-import RefundPolicy from "./pages/RefundPolicy";
-import PricingPage from "./pages/PricingPage";
-import VerifyEmail from "./pages/verify-email";
-import AboutUs from "./pages/AboutUs";
 import { ScrollToTop } from "./components/ScrollToTop";
-import { SignupPopupHandler } from "./components/SignupPopupHandler";
 import LanguageManagement from "./pages/LanguageManagement";
 import SuperadminMessageLogs from "./pages/SuperadminMessageLogs";
 import ApiDocs from "./pages/api-docs";
@@ -178,6 +164,10 @@ function ProtectedRoutes() {
     }
   }, [fromLoginFlag]);
 
+  useEffect(() => {
+    if (isAuthenticated) markExplored(location);
+  }, [location, isAuthenticated]);
+
   // Check if user has access to current route
   useEffect(() => {
     if (isAuthenticated && user && location !== "/") {
@@ -207,18 +197,9 @@ function ProtectedRoutes() {
     );
   }
 
-  // Priority 3: Not authenticated - show public routes
+  // Priority 3: Not authenticated - demo login is the way in
   if (!isAuthenticated) {
-    return (
-      <>
-        <Header />
-        <Switch>
-          <Route path="/" component={Home} />
-          <Route component={Home} />
-        </Switch>
-        <Footer />
-      </>
-    );
+    return <Redirect to={`/login?next=${encodeURIComponent(location)}`} />;
   }
 
   // Priority 4: Authenticated - show dashboard and protected routes
@@ -262,12 +243,6 @@ function ProtectedRoutes() {
               component={Inbox}
               requiredPermission="inbox:view"
             />
-          </Route>
-          <Route path="/plans">
-            <PermissionRoute component={Plans} />
-          </Route>
-          <Route path="/gateway">
-            <PermissionRoute component={GatewaySettings} requiredRoles={["superadmin"]} />
           </Route>
           <Route path="/languages">
             <PermissionRoute component={LanguageManagement} requiredRoles={["superadmin"]} />
@@ -356,9 +331,6 @@ function ProtectedRoutes() {
           <Route path="/reports">
             <PermissionRoute component={Reports} />
           </Route>
-          <Route path="/transactions-logs">
-            <PermissionRoute component={TransactionsPage} requiredRoles={["superadmin"]} />
-          </Route>
           <Route path="/contacts-management">
             <PermissionRoute component={ContactsManagements} requiredRoles={["superadmin"]} />
           </Route>
@@ -374,12 +346,6 @@ function ProtectedRoutes() {
           <Route path="/user-support-tickets">
             <PermissionRoute component={UserSupportTicketsNew} />
           </Route>
-          <Route path="/plan-upgrade">
-            <PermissionRoute component={Plans} />
-          </Route>
-          <Route path="/billing">
-            <PermissionRoute component={BillingSubscriptionPage} />
-          </Route>
           <Route path="/notifications">
             <PermissionRoute component={Notifications} />
           </Route>
@@ -389,9 +355,11 @@ function ProtectedRoutes() {
           <Route path="/chat-hub">
             <PermissionRoute component={ChatHub} />
           </Route>
-          <Route path="/master-subscriptions">
-            <PermissionRoute component={AllSubscriptionsPage} requiredRoles={["superadmin"]} />
-          </Route>
+          {["/plans", "/plan-upgrade", "/billing", "/gateway", "/master-subscriptions", "/transactions-logs"].map((path) => (
+            <Route key={path} path={path}>
+              <Redirect to="/dashboard" />
+            </Route>
+          ))}
           <Route component={NotFound} />
         </Switch>
       </div>
@@ -452,59 +420,20 @@ function Router() {
   return (
     <>
       <ScrollToTop />
-      <SignupPopupHandler />
       <Switch>
         <Route path="/login" component={LoginPage} />
+        <Route path="/signup">
+          <Redirect to="/login" />
+        </Route>
         <Route path="/verify-email">
-          <>
-            <Header />
-            <VerifyEmail />
-            <Footer />
-          </>
+          <Redirect to="/login" />
         </Route>
-        <Route path="/signup" component={Signup} />
-        <Route path="/privacy-policy">
-          <>
-            <Header />
-            <PrivacyPage />
-            <Footer />
-          </>
-        </Route>
-        <Route path="/terms">
-          <>
-            <Header />
-            <TermsPage />
-            <Footer />
-          </>
-        </Route>
-        <Route path="/about">
-          <>
-            <Header />
-            <AboutUs />
-            <Footer />
-          </>
-        </Route>
-        <Route path="/pricing">
-          <>
-            <Header />
-            <PricingPage />
-            <Footer />
-          </>
-        </Route>
-        <Route path="/refund-policy">
-          <>
-            <Header />
-            <RefundPolicy />
-            <Footer />
-          </>
-        </Route>
-        <Route path="/">
-          <>
-            <Header />
-            <Home />
-            <Footer />
-          </>
-        </Route>
+        {["/pricing", "/about", "/terms", "/privacy-policy"].map((path) => (
+          <Route key={path} path={path}>
+            <Redirect to="/" />
+          </Route>
+        ))}
+        <Route path="/" component={Home} />
         <Route component={ProtectedRoutes} />
       </Switch>
     </>

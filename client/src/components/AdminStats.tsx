@@ -27,7 +27,6 @@ import {
   FileText,
   Radio,
   UserPlus,
-  CreditCard,
   UsersRound,
 } from "lucide-react";
 
@@ -198,15 +197,6 @@ export default function AdminStats() {
             icon={<UserPlus className="w-6 h-6" />}
             iconClassName="bg-teal-50 text-teal-600"
             borderColor="border-l-teal-500"
-          />
-        )}
-        {stats.totalPaidUsers !== undefined && stats.totalPaidUsers !== null && (
-          <CardStat
-            label="Total Paid Users"
-            value={stats.totalPaidUsers}
-            icon={<CreditCard className="w-6 h-6" />}
-            iconClassName="bg-emerald-50 text-emerald-600"
-            borderColor="border-l-emerald-500"
           />
         )}
       </div>

@@ -1086,6 +1086,7 @@
     "subtitle": "Track your WhatsApp business performance with real-time data",
     "time_range": "Time Range",
     "OverviewTab": {
+      "Message_Performance": "Message Performance",
       "title": "Overview",
       "last": "Last",
       "days": "days",

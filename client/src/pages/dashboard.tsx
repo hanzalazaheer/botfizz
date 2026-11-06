@@ -8,843 +8,402 @@
  * ============================================================
  */
 
-import { useQuery } from "@tanstack/react-query";
-import Header from "@/components/layout/header";
-import { Loading } from "@/components/ui/loading";
-import { MessageChart } from "@/components/charts/message-chart";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-  MessageSquare,
-  Megaphone,
-  CheckCircle,
-  Users,
-  TrendingUp,
-  Clock,
-  Activity,
-  Zap,
-  Upload,
-  FileText,
-  BarChart3,
-  ExternalLink,
-  TrendingDown,
-  ArrowUpRight,
-  ArrowDownRight,
-  Send,
-  Eye,
-  Target,
-  LayoutGrid,
-} from "lucide-react";
-import { useDashboardStats, useAnalytics } from "@/hooks/use-dashboard";
-import { useActiveChannel } from "@/hooks/use-active-channel";
-import { useTranslation } from "@/lib/i18n";
-import { useState } from "react";
-import { User, LogOut, LogIn, Edit, PlusCircle } from "lucide-react";
+import { useState, type ComponentType } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { formatDistanceToNow } from "date-fns";
-import { useLocation } from "wouter";
-import { DashboardStarApiDataType } from "./types/type";
-import { useAuth } from "@/contexts/auth-context";
+import {
+  ArrowRight,
+  BarChart3,
+  Bell,
+  Bot,
+  CheckCheck,
+  CheckCircle2,
+  FileText,
+  Globe,
+  Inbox,
+  LifeBuoy,
+  Loader2,
+  Megaphone,
+  MessageSquarePlus,
+  Palette,
+  Radio,
+  ScrollText,
+  Send,
+  Settings as SettingsIcon,
+  Users,
+  Workflow,
+  Zap,
+} from "lucide-react";
+import Header from "@/components/layout/header";
 import AdminStats from "@/components/AdminStats";
+import { MessageChart } from "@/components/charts/message-chart";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/auth-context";
+import { useActiveChannel } from "@/hooks/use-active-channel";
+import { useAnalytics, useDashboardStats } from "@/hooks/use-dashboard";
+import { useToast } from "@/hooks/use-toast";
+import { getExplored } from "@/lib/explored";
+import { apiRequest } from "@/lib/queryClient";
 
-export default function Dashboard() {
-  const { t } = useTranslation();
-  const { user } = useAuth();
-  const [, setLocation] = useLocation();
+type Tile = {
+  href: string;
+  label: string;
+  hint: string;
+  icon: ComponentType<{ className?: string }>;
+  tone: string;
+};
 
-  const { data: activeChannel } = useActiveChannel();
+const BUSINESS_TILES: Tile[] = [
+  { href: "/inbox", label: "Reply in the Team Inbox", hint: "Answer a waiting customer", icon: Inbox, tone: "bg-green-100 text-green-700" },
+  { href: "/widget-builder", label: "Design your chat widget", hint: "Restyle it and watch it change", icon: Palette, tone: "bg-teal-100 text-teal-700" },
+  { href: "/automation", label: "Build a bot flow", hint: "Drag steps onto the canvas", icon: Workflow, tone: "bg-indigo-100 text-indigo-700" },
+  { href: "/campaigns", label: "Launch a campaign", hint: "Reach a whole group at once", icon: Megaphone, tone: "bg-orange-100 text-orange-700" },
+  { href: "/templates", label: "Write a template", hint: "Save a message to reuse", icon: FileText, tone: "bg-purple-100 text-purple-700" },
+  { href: "/contacts", label: "Organise your contacts", hint: "Search, tag and add people", icon: Users, tone: "bg-blue-100 text-blue-700" },
+  { href: "/analytics", label: "Read your analytics", hint: "See what's working", icon: BarChart3, tone: "bg-pink-100 text-pink-700" },
+  { href: "/settings", label: "Tour the settings", hint: "Team, channels and more", icon: SettingsIcon, tone: "bg-gray-100 text-gray-700" },
+];
 
-  const isAdmin = user?.role === "superadmin";
+const ADMIN_TILES: Tile[] = [
+  { href: "/users", label: "Manage businesses", hint: "Every account on the platform", icon: Users, tone: "bg-blue-100 text-blue-700" },
+  { href: "/channels-management", label: "Monitor channels", hint: "Health across all numbers", icon: Radio, tone: "bg-green-100 text-green-700" },
+  { href: "/message-logs", label: "Inspect message logs", hint: "Trace any message", icon: ScrollText, tone: "bg-indigo-100 text-indigo-700" },
+  { href: "/support-tickets", label: "Handle support tickets", hint: "Help the businesses you host", icon: LifeBuoy, tone: "bg-orange-100 text-orange-700" },
+  { href: "/languages", label: "Manage languages", hint: "Translate the whole interface", icon: Globe, tone: "bg-teal-100 text-teal-700" },
+  { href: "/notifications", label: "Send announcements", hint: "Notify every business", icon: Bell, tone: "bg-pink-100 text-pink-700" },
+  { href: "/campaigns", label: "Review campaigns", hint: "See what's being sent", icon: Megaphone, tone: "bg-purple-100 text-purple-700" },
+  { href: "/analytics", label: "Read platform analytics", hint: "Volume and delivery", icon: BarChart3, tone: "bg-gray-100 text-gray-700" },
+];
 
-  const { data: activityLogs = [], isLoading } = useQuery({
-    queryKey: ["/api/team/activity-logs"],
-    queryFn: async () => {
-      const response = await fetch("/api/team/activity-logs");
-      
-      // if (!response.ok) return null;
-      return await response.json();
-    },
-  });
-
-
-  
-
-  // console.log("activity logs response ", activityLogs);
-
-  const [timeRange, setTimeRange] = useState<number>(30);
-
-  // Fetch campaign analytics
-  const { data: campaignAnalytics, isLoading: campaignLoading } = useQuery({
-    queryKey: ["/api/analytics/campaigns", activeChannel?.id, user?.id],
-    queryFn: async () => {
-      const params = new URLSearchParams({
-        ...(activeChannel?.id && { channelId: activeChannel.id }),
-      });
-      const response = await fetch(`/api/analytics/campaigns?${params}`, {
-        credentials: "include",
-      });
-      if (!response.ok) throw new Error("Failed to fetch campaign analytics");
-      return await response.json();
-    },
-    enabled: !!activeChannel,
-  });
-
-  const { data: stats, isLoading: statsLoading } = useDashboardStats(
-    activeChannel?.id,
-    user?.id
-  );
-  // const { data: analytics, isLoading: analyticsLoading } = useAnalytics(7, activeChannel?.id);
-
-  // Fetch message analytics
-  const { data: messageAnalytics, isLoading: analyticsLoading } = useQuery({
-  queryKey: ["/api/analytics/messages", activeChannel?.id, timeRange, user?.id],
-
-  queryFn: async () => {
-    const params = new URLSearchParams({
-      days: timeRange.toString(),
-      ...(user?.role !== "superadmin" && activeChannel?.id && {
-        channelId: activeChannel.id,
-      }),
-    });
-
-    const response = await fetch(`/api/analytics/messages?${params}`, {
-      credentials: "include",
-    });
-    if (!response.ok) throw new Error("Failed to fetch message analytics");
-    return await response.json();
-  },
-
-  enabled:
-    user?.role === "superadmin"
-      ? true
-      : !!activeChannel?.id,
-});
-
-
-  // console.log("this is stats ", stats);
-
-  if (statsLoading) {
-    return (
-      <div className="flex-1 dots-bg">
-        <Header title="Dashboard" subtitle="Loading dashboard data..." />
-        <div className="p-6">
-          <Loading size="lg" text="Loading dashboard..." />
-        </div>
-      </div>
-    );
-  }
-
-  // const chartData = analytics || [];
-  const chartData =
-    messageAnalytics?.dailyStats?.map((stat: any) => ({
-      date: new Date(stat.date).toLocaleDateString(),
-      sent: stat.totalSent || 0,
-      delivered: stat.delivered || 0,
-      read: stat.read || 0,
-      failed: stat.failed || 0,
-    })) || [];
-
-  const messageMetrics = messageAnalytics?.overall || {};
-
-  // Calculate rates — use outbound-only counts, capped at 100%
-  const totalOutbound = Number(messageMetrics.totalOutbound) || 0;
-  const deliveryRate =
-    totalOutbound > 0
-      ? Math.min(((messageMetrics.totalDelivered || 0) / totalOutbound) * 100, 100)
-      : 0;
-
-  const getActivityMeta = (action: string) => {
-    switch (action) {
-      case "login":
-        return {
-          icon: <LogIn className="w-4 h-4 text-green-600" />,
-          color: "bg-green-100",
-          label: "User logged in",
-        };
-      case "logout":
-        return {
-          icon: <LogOut className="w-4 h-4 text-gray-600" />,
-          color: "bg-gray-100",
-          label: "User logged out",
-        };
-      case "user_created":
-        return {
-          icon: <PlusCircle className="w-4 h-4 text-blue-600" />,
-          color: "bg-blue-100",
-          label: "User created",
-        };
-      case "user_updated":
-        return {
-          icon: <Edit className="w-4 h-4 text-yellow-600" />,
-          color: "bg-yellow-100",
-          label: "User updated",
-        };
-      default:
-        return {
-          icon: <Activity className="w-4 h-4 text-purple-600" />,
-          color: "bg-purple-100",
-          label: "Activity",
-        };
-    }
-  };
-
-  const getWeekComparison = (stats: DashboardStarApiDataType) => {
-    const thisWeek = stats?.weekContacts || 0;
-    const lastWeek = stats?.lastWeekContacts || 0;
-
-    if (lastWeek === 0) {
-      return {
-        percentage: thisWeek > 0 ? "+100.0" : "0.0",
-        isUp: thisWeek > 0,
-      };
-    }
-
-    const change = ((thisWeek - lastWeek) / lastWeek) * 100;
-    const sign = change >= 0 ? "+" : "";
-
-    return {
-      percentage: `${sign}${change.toFixed(1)}`,
-      isUp: change >= 0,
-    };
-  };
-
-  type ActivityLog = {
-    action: string;
-    createdAt: string; // or Date
-    [key: string]: any; // other optional fields
-  };
-
-  const getMonthlyGrowth = (stats: DashboardStarApiDataType) => {
-    const thisMonth = stats?.thisMonthMessages || 0;
-    const lastMonth = stats?.lastMonthMessages || 0;
-
-    if (lastMonth === 0) {
-      return {
-        growth: thisMonth > 0 ? 100 : 0,
-        isPositive: thisMonth > 0,
-        isFlat: thisMonth === 0,
-      };
-    }
-
-    const growthRate = ((thisMonth - lastMonth) / lastMonth) * 100;
-
-    return {
-      growth: Math.abs(growthRate).toFixed(1),
-      isPositive: growthRate >= 0,
-      isFlat: growthRate === 0,
-    };
-  };
+function ExploreFeatures({ tiles }: { tiles: Tile[] }) {
+  const explored = getExplored();
+  const done = tiles.filter((tile) => explored.includes(tile.href)).length;
+  const finished = done === tiles.length;
 
   return (
-    <div className="flex-1 dots-bg min-h-screen">
-      {user?.role === "superadmin" ? (
-        <Header
-          title={t("dashboard.title")}
-          subtitle={t("dashboard.subtitle")}
+    <section className="rounded-xl border border-gray-200 bg-white p-5">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h2 className="font-semibold text-gray-900">
+            {finished ? "You've seen everything. Nicely done!" : "Explore every feature"}
+          </h2>
+          <p className="text-sm text-gray-500">
+            {finished
+              ? "Change anything you like. It's all sample data."
+              : "Click each one. Everything here works, and nothing can break."}
+          </p>
+        </div>
+        <p className="text-sm font-medium tabular-nums text-green-700">
+          {done} of {tiles.length} explored
+        </p>
+      </div>
+
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-gray-100">
+        <div
+          className="h-full rounded-full bg-green-500 transition-all duration-500"
+          style={{ width: `${(done / tiles.length) * 100}%` }}
         />
-      ) : (
-        <Header
-          title={t("dashboard.title")}
-          subtitle={t("dashboard.subtitle")}
-          action={{
-            label: t("dashboard.newCampaign"),
-            onClick: () => setLocation("/campaigns"),
-          }}
-        />
-      )}
+      </div>
 
-      <main className="p-6 space-y-6">
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"></div>
-        <AdminStats />
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {tiles.map(({ href, label, hint, icon: Icon, tone }) => {
+          const seen = explored.includes(href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              className="group relative rounded-xl border border-gray-200 p-4 transition hover:-translate-y-0.5 hover:border-green-500 hover:shadow-md"
+            >
+              {seen ? (
+                <CheckCircle2 className="absolute right-3 top-3 h-5 w-5 text-green-500" aria-label="Explored" />
+              ) : (
+                <ArrowRight className="absolute right-3 top-3 h-4 w-4 text-gray-300 transition group-hover:translate-x-0.5 group-hover:text-green-600" />
+              )}
+              <span className={`inline-flex h-10 w-10 items-center justify-center rounded-lg ${tone}`}>
+                <Icon className="h-5 w-5" />
+              </span>
+              <p className="mt-3 pr-5 text-sm font-semibold text-gray-900">{label}</p>
+              <p className="mt-0.5 text-xs text-gray-500">{hint}</p>
+            </Link>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
 
-        {user?.role !== "superadmin" && stats && (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="hover-lift fade-in">
-                <CardContent className="pt-6 pb-4 px-6">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="rounded-lg p-2.5 bg-green-50 text-green-600">
-                      <Send className="w-5 h-5" />
-                    </div>
-                    <h3 className="text-sm font-medium text-gray-600">Delivery Rate</h3>
-                  </div>
-                  <div className="text-3xl font-bold text-gray-900 mb-2">
-                    {stats.totalMessages > 0
-                      ? Math.min(((stats.messagesDelivered || 0) / stats.totalMessages) * 100, 100).toFixed(1)
-                      : "0.0"}%
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-green-500 h-2 rounded-full transition-all duration-500"
-                      style={{
-                        width: `${stats.totalMessages > 0
-                          ? Math.min(((stats.messagesDelivered || 0) / stats.totalMessages) * 100, 100)
-                          : 0}%`,
-                      }}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    {stats.messagesDelivered ?? 0} of {stats.totalMessages ?? 0} messages
-                  </p>
-                </CardContent>
-              </Card>
+const percent = (part = 0, total = 0) =>
+  total > 0 ? `${Math.round((part / total) * 100)}%` : "—";
 
-              <Card className="hover-lift fade-in">
-                <CardContent className="pt-6 pb-4 px-6">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="rounded-lg p-2.5 bg-violet-50 text-violet-600">
-                      <Eye className="w-5 h-5" />
-                    </div>
-                    <h3 className="text-sm font-medium text-gray-600">Read Rate</h3>
-                  </div>
-                  <div className="text-3xl font-bold text-gray-900 mb-2">
-                    {stats.totalMessages > 0
-                      ? Math.min(((stats.messagesRead || 0) / stats.totalMessages) * 100, 100).toFixed(1)
-                      : "0.0"}%
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-violet-500 h-2 rounded-full transition-all duration-500"
-                      style={{
-                        width: `${stats.totalMessages > 0
-                          ? Math.min(((stats.messagesRead || 0) / stats.totalMessages) * 100, 100)
-                          : 0}%`,
-                      }}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    {stats.messagesRead ?? 0} of {stats.totalMessages ?? 0} messages
-                  </p>
-                </CardContent>
-              </Card>
+function Stat({
+  href,
+  label,
+  value,
+  note,
+  icon: Icon,
+}: {
+  href: string;
+  label: string;
+  value: string | number;
+  note: string;
+  icon: ComponentType<{ className?: string }>;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group rounded-xl border border-gray-200 bg-white p-5 transition hover:border-green-500"
+    >
+      <div className="flex items-center justify-between text-sm text-gray-500">
+        {label}
+        <Icon className="h-4 w-4 text-gray-400 group-hover:text-green-600" />
+      </div>
+      <p className="mt-3 text-3xl font-semibold tabular-nums text-gray-900">{value}</p>
+      <p className="mt-1 text-xs text-gray-500">{note}</p>
+    </Link>
+  );
+}
 
-              <Card className="hover-lift fade-in">
-                <CardContent className="pt-6 pb-4 px-6">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="rounded-lg p-2.5 bg-amber-50 text-amber-600">
-                      <TrendingUp className="w-5 h-5" />
-                    </div>
-                    <h3 className="text-sm font-medium text-gray-600">Monthly Growth</h3>
-                  </div>
-                  {(() => {
-                    const growth = getMonthlyGrowth(stats);
-                    return (
-                      <>
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-3xl font-bold text-gray-900">
-                            {growth.growth}%
-                          </span>
-                          {!growth.isFlat && (
-                            growth.isPositive ? (
-                              <ArrowUpRight className="w-6 h-6 text-green-500" />
-                            ) : (
-                              <ArrowDownRight className="w-6 h-6 text-red-500" />
-                            )
-                          )}
-                        </div>
-                        <p className="text-xs text-gray-500">
-                          {stats.thisMonthMessages ?? 0} this month vs {stats.lastMonthMessages ?? 0} last month
-                        </p>
-                      </>
-                    );
-                  })()}
-                </CardContent>
-              </Card>
-            </div>
+function ConnectChannel({ sandboxEnabled }: { sandboxEnabled: boolean }) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="hover-lift fade-in">
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Target className="w-5 h-5 text-blue-600" />
-                    Contact Growth
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {(() => {
-                    const comparison = getWeekComparison(stats);
-                    return (
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">This week</p>
-                          <p className="text-2xl font-bold text-gray-900">{stats.weekContacts ?? 0}</p>
-                        </div>
-                        <div className="text-center">
-                          <div className={`flex items-center gap-1 text-lg font-semibold ${comparison.isUp ? "text-green-600" : "text-red-600"}`}>
-                            {comparison.isUp ? (
-                              <ArrowUpRight className="w-5 h-5" />
-                            ) : (
-                              <ArrowDownRight className="w-5 h-5" />
-                            )}
-                            {comparison.percentage}%
-                          </div>
-                          <p className="text-xs text-gray-500">vs last week</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">Last week</p>
-                          <p className="text-2xl font-bold text-gray-400">{stats.lastWeekContacts ?? 0}</p>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </CardContent>
-              </Card>
+  const provision = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/sandbox/provision"),
+    onSuccess: () => queryClient.invalidateQueries(),
+    onError: () =>
+      toast({ title: "Could not set up the workspace", variant: "destructive" }),
+  });
 
-              <Card className="hover-lift fade-in">
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <LayoutGrid className="w-5 h-5 text-pink-600" />
-                    Campaign Overview
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-around">
-                    <div className="text-center">
-                      <div className="w-12 h-12 rounded-full bg-pink-50 flex items-center justify-center mx-auto mb-2">
-                        <Megaphone className="w-6 h-6 text-pink-600" />
-                      </div>
-                      <p className="text-2xl font-bold text-gray-900">{stats.totalCampaigns ?? 0}</p>
-                      <p className="text-sm text-gray-500">Campaigns</p>
-                    </div>
-                    <div className="h-12 w-px bg-gray-200" />
-                    <div className="text-center">
-                      <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center mx-auto mb-2">
-                        <FileText className="w-6 h-6 text-purple-600" />
-                      </div>
-                      <p className="text-2xl font-bold text-gray-900">{stats.totalTemplates ?? 0}</p>
-                      <p className="text-sm text-gray-500">Templates</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </>
+  return (
+    <section className="rounded-xl border border-gray-200 bg-white p-8 text-center">
+      <Zap className="mx-auto h-8 w-8 text-green-600" />
+      <h2 className="mt-3 text-xl font-semibold text-gray-900">Set up your workspace</h2>
+      <p className="mx-auto mt-2 max-w-md text-sm text-gray-600">
+        {sandboxEnabled
+          ? "Create a sandbox channel with sample contacts and conversations, or connect your own WhatsApp number."
+          : "Connect a WhatsApp Business number to start messaging customers."}
+      </p>
+      <div className="mt-5 flex flex-wrap justify-center gap-3">
+        {sandboxEnabled && (
+          <Button
+            className="bg-green-600 hover:bg-green-700"
+            disabled={provision.isPending}
+            onClick={() => provision.mutate()}
+          >
+            {provision.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Create sandbox workspace
+          </Button>
+        )}
+        <Button variant="outline" asChild>
+          <Link href="/settings">Connect WhatsApp</Link>
+        </Button>
+      </div>
+    </section>
+  );
+}
+
+export default function Dashboard() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [days, setDays] = useState(14);
+
+  const { data: channel, isLoading: channelLoading } = useActiveChannel();
+  const { data: stats } = useDashboardStats(channel?.id, user?.id);
+  const { data: analytics = [] } = useAnalytics(days, channel?.id);
+
+  const { data: sandbox } = useQuery<{ enabled: boolean }>({
+    queryKey: ["/api/sandbox/status"],
+    queryFn: () => fetch("/api/sandbox/status").then((res) => res.json()),
+  });
+
+  const { data: conversations = [] } = useQuery<any[]>({
+    queryKey: ["/api/conversations", channel?.id],
+    enabled: !!channel?.id,
+    refetchInterval: 10000,
+    queryFn: async () => {
+      const res = await fetch(`/api/conversations?channelId=${channel.id}`, {
+        credentials: "include",
+      });
+      if (!res.ok) return [];
+      const body = await res.json();
+      return Array.isArray(body) ? body : body.data ?? body.conversations ?? [];
+    },
+  });
+
+  const simulateInbound = useMutation({
+    mutationFn: async () =>
+      (await apiRequest("POST", "/api/sandbox/simulate-inbound")).json(),
+    onSuccess: (result) => {
+      toast({ title: `New message from ${result.from}`, description: result.text });
+      setTimeout(() => queryClient.invalidateQueries(), 800);
+    },
+    onError: () => toast({ title: "Could not simulate a message", variant: "destructive" }),
+  });
+
+  const chartData = (analytics as any[]).map((row) => ({
+    date: new Date(row.date).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+    sent: Number(row.messagesSent ?? 0),
+    delivered: Number(row.messagesDelivered ?? 0),
+    read: Number(row.messagesRead ?? 0),
+    failed: 0,
+  }));
+
+  const recent = [...conversations]
+    .sort(
+      (a, b) =>
+        new Date(b.lastMessageAt ?? 0).getTime() - new Date(a.lastMessageAt ?? 0).getTime(),
+    )
+    .slice(0, 6);
+
+  const firstName = user?.firstName || user?.username || "there";
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Header
+        title={`Hi, ${firstName}`}
+        subtitle={channel ? `Channel: ${channel.name}` : "No channel connected yet"}
+      />
+
+      <main className="mx-auto max-w-6xl space-y-6 p-4 md:p-6">
+        {user?.role === "superadmin" && <AdminStats />}
+
+        {!channelLoading && !channel && (
+          <ConnectChannel sandboxEnabled={!!sandbox?.enabled} />
         )}
 
-        {/* Charts and Recent Activity */}
-        <div
-          className={`grid grid-cols-1 gap-6 ${
-            user?.role === "superadmin" ? "lg:grid-cols-3" : "lg:grid-cols-1"
-          }`}
-        >
-          {/* Message Analytics Chart */}
-          <Card className="lg:col-span-2 min-w-0 overflow-hidden hover-lift fade-in">
-            <CardHeader>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                <CardTitle>{t("dashboard.messageAnalytics")}</CardTitle>
-                <div className="flex flex-wrap sm:flex-nowrap space-x-0 sm:space-x-2 gap-2 mt-2 sm:mt-0">
-                  {[
-                    { value: 1, label: t("dashboard.today") },
-                    { value: 7, label: t("dashboard.7Days") },
-                    { value: 30, label: t("dashboard.30Days") },
-                    // { value: 90, label: "3 Months" },
-                  ].map((range) => (
-                    <Button
-                      key={range.value}
-                      variant={
-                        timeRange === range.value ? "default" : "outline"
-                      }
-                      size="sm"
-                      onClick={() => setTimeRange(range.value)}
-                      className={
-                        timeRange === range.value ? "bg-green-600" : ""
-                      }
-                    >
-                      {range.label}
-                    </Button>
-                  ))}
+        {channel && <ExploreFeatures tiles={user?.role === "superadmin" ? ADMIN_TILES : BUSINESS_TILES} />}
+
+        {channel && (
+          <>
+            <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+              <Stat
+                href="/contacts"
+                label="Contacts"
+                value={stats?.totalContacts ?? 0}
+                note={`${stats?.weekContacts ?? 0} added this week`}
+                icon={Users}
+              />
+              <Stat
+                href="/analytics"
+                label="Messages sent"
+                value={stats?.messagesSent ?? 0}
+                note={`${stats?.todayMessages ?? 0} today`}
+                icon={Send}
+              />
+              <Stat
+                href="/analytics"
+                label="Delivered"
+                value={percent(stats?.messagesDelivered, stats?.messagesSent)}
+                note={`${stats?.messagesDelivered ?? 0} messages`}
+                icon={CheckCheck}
+              />
+              <Stat
+                href="/campaigns"
+                label="Campaigns"
+                value={stats?.totalCampaigns ?? 0}
+                note={`${stats?.totalTemplates ?? 0} templates ready`}
+                icon={Megaphone}
+              />
+            </section>
+
+            <section className="grid gap-6 lg:grid-cols-5">
+              <div className="rounded-xl border border-gray-200 bg-white p-5 lg:col-span-3">
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="font-semibold text-gray-900">Message activity</h2>
+                  <select
+                    aria-label="Time range"
+                    className="rounded-md border border-gray-200 bg-white px-2 py-1 text-sm text-gray-700"
+                    value={days}
+                    onChange={(event) => setDays(Number(event.target.value))}
+                  >
+                    <option value={7}>Last 7 days</option>
+                    <option value={14}>Last 14 days</option>
+                    <option value={30}>Last 30 days</option>
+                  </select>
                 </div>
-              </div>
-            </CardHeader>
-
-            <CardContent className="overflow-hidden">
-              {analyticsLoading ? (
-                <Loading text="Loading chart data..." />
-              ) : (
-                <MessageChart data={chartData} />
-              )}
-
-              {/* Chart Legend */}
-              <div className="flex items-center justify-center space-x-6 mt-4 flex-wrap">
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-blue-600 rounded mr-2" />
-                  <span className="text-sm text-gray-600">
-                    {t("dashboard.sent")}
-                  </span>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-green-600 rounded mr-2" />
-                  <span className="text-sm text-gray-600">
-                    {t("dashboard.delivered")}
-                  </span>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-orange-600 rounded mr-2" />
-                  <span className="text-sm text-gray-600">
-                    {t("dashboard.read")}
-                  </span>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-purple-600 rounded mr-2" />
-                  <span className="text-sm text-gray-600">
-                    {t("dashboard.replied")}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Recent Activities */}
-          {user?.role === "superadmin" && (
-            <Card className="hover-lift fade-in">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Activity className="w-5 h-5 mr-2" />
-                  {t("dashboard.recentActivities")}
-                </CardTitle>
-              </CardHeader>
-
-              <CardContent>
-                <div className="space-y-4">
-                  {isLoading ? (
-                    <p className="text-sm text-gray-500">
-                      {t("dashboard.loadingActivities")}
-                    </p>
-                  ) : activityLogs.length === 0 ? (
-                    <p className="text-sm text-gray-500">
-                      {t("dashboard.noRecentActivities")}
-                    </p>
-                  ) : (
-                    (activityLogs as ActivityLog[])
-                      .sort(
-                        (a: ActivityLog, b: ActivityLog) =>
-                          new Date(b.createdAt).getTime() -
-                          new Date(a.createdAt).getTime()
-                      )
-                      .slice(0, 5)
-                      .map((log: ActivityLog) => {
-                        const meta = getActivityMeta(log.action);
-                        return (
-                          <div
-                            key={log.id}
-                            className="flex items-start space-x-3"
-                          >
-                            <div
-                              className={`w-8 h-8 ${meta.color} rounded-full flex items-center justify-center flex-shrink-0`}
-                            >
-                              {meta.icon}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm text-gray-900">
-                                {meta.label} by {log.userName}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {formatDistanceToNow(new Date(log.createdAt), {
-                                  addSuffix: true,
-                                })}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      })
-                  )}
-                </div>
-
-                <Button
-                  variant="ghost"
-                  className="w-full mt-4 text-green-600 hover:text-green-700"
-                  onClick={() => setLocation("/team")}
-                >
-                  {t("dashboard.viewAllActivities")}{" "}
-                  <ExternalLink className="w-4 h-4 ml-1" />
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Quick Actions and API Status */}
-        {user?.role !== "superadmin" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Quick Actions */}
-          <Card className="hover-lift fade-in">
-            <CardHeader>
-              <CardTitle>{t("dashboard.quickActions")}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4 ">
-                <Button
-                  variant="outline"
-                  className="p-4 h-auto text-left flex flex-col items-center md:items-start space-y-2 hover:bg-blue-50"
-                  onClick={() => setLocation("/contacts")}
-                >
-                  <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                    <Upload className="w-4 h-4 text-white" />
+                {chartData.length > 0 ? (
+                  <div className="h-72">
+                    <MessageChart data={chartData} />
                   </div>
-                  <div>
-                    <h4 className=" text-gray-900 text-xs md:text-sm">
-                      {t("dashboard.importContacts")}
-                    </h4>
-                    <p className="text-sm text-gray-600 hidden sm:block ">
-                      {t("dashboard.uploadCSV")}
-                    </p>
-                  </div>
-                </Button>
-
-                <Button
-                  variant="outline"
-                  className="p-4 h-auto text-left flex flex-col items-start space-y-2 hover:bg-green-50"
-                  onClick={() => setLocation("/templates")}
-                >
-                  <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
-                    <FileText className="w-4 h-4 text-white" />
-                  </div>
-                  <div>
-                    <h4 className=" text-gray-900 text-xs md:text-sm">
-                      {t("dashboard.newTemplate")}
-                    </h4>
-                    <p className="text-sm text-gray-600 text-nowrap hidden sm:block ">
-                      {t("dashboard.createMessageTemplate")}
-                    </p>
-                  </div>
-                </Button>
-
-                <Button
-                  variant="outline"
-                  className="p-4 h-auto text-left flex flex-col items-start space-y-2 hover:bg-purple-50"
-                  onClick={() => setLocation("/automation")}
-                >
-                  <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
-                    <Zap className="w-4 h-4 text-white" />
-                  </div>
-                  <div>
-                    <h4 className=" text-gray-900 text-xs md:text-sm">
-                      {t("dashboard.buildFlow")}
-                    </h4>
-                    <p className="text-sm text-gray-600 text-nowrap hidden sm:block">
-                      {t("dashboard.createAutomation")}
-                    </p>
-                  </div>
-                </Button>
-
-                <Button
-                  variant="outline"
-                  className="p-4 h-auto text-left flex flex-col items-start space-y-2 hover:bg-orange-50"
-                  onClick={() => setLocation("/analytics")}
-                >
-                  <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center">
-                    <BarChart3 className="w-4 h-4 text-white" />
-                  </div>
-                  <div>
-                    <h4 className=" text-gray-900 text-xs md:text-sm">
-                      {t("dashboard.viewReports")}
-                    </h4>
-                    <p className="text-sm text-gray-600 text-nowrap hidden sm:block">
-                      {t("dashboard.detailedAnalytics")}
-                    </p>
-                  </div>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* API Status */}
-          <Card className="hover-lift fade-in">
-            <CardHeader>
-              <CardTitle>{t("dashboard.apiStatusConnection")}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* WhatsApp Cloud API */}
-                <div
-                  className={`flex items-center justify-between p-3 rounded-lg ${
-                    activeChannel?.isActive === true
-                      ? "bg-green-50"
-                      : "bg-red-50"
-                  }`}
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 space-y-2 sm:space-y-0">
-                    <div
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                        activeChannel?.isActive ? "bg-green-600" : "bg-red-600"
-                      }`}
-                    >
-                      <MessageSquare className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="min-w-0">
-                      <h4 className="font-medium text-gray-900 text-sm sm:text-base truncate">
-                        {t("dashboard.whatsAppCloudAPI")}
-                      </h4>
-                      <p className="text-xs sm:text-sm text-gray-600 truncate">
-                        {user?.username
-                          ? activeChannel
-                            ? `${
-                                activeChannel.name
-                                  .slice(0, -1)
-                                  .replace(/./g, "*") +
-                                activeChannel.name.slice(-1)
-                              } (${
-                                activeChannel.phoneNumber
-                                  .slice(0, -4)
-                                  .replace(/\d/g, "*") +
-                                activeChannel.phoneNumber.slice(-4)
-                              })`
-                            : t("dashboard.noChannelSelected")
-                          : activeChannel
-                          ? `${activeChannel.name} (${activeChannel.phoneNumber})`
-                          : t("dashboard.noChannelSelected")}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <div
-                      className={`w-2 h-2 rounded-full ${
-                        activeChannel?.isActive === true
-                          ? "bg-green-500 pulse-gentle"
-                          : "bg-red-500"
-                      }`}
-                    />
-                    <span
-                      className={`text-sm font-medium ${
-                        activeChannel?.isActive === true
-                          ? "text-green-600"
-                          : "text-red-600"
-                      }`}
-                    >
-                      {activeChannel?.isActive === true
-                        ? t("dashboard.connected")
-                        : activeChannel?.isActive === false
-                        ? t("dashboard.warning")
-                        : activeChannel
-                        ? t("dashboard.error")
-                        : t("dashboard.noChannel")}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Channel Quality */}
-                {activeChannel && (
-                  <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                        <Activity className="w-4 h-4 text-white" />
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900">
-                          {t("dashboard.healthDetails")}
-                        </h4>
-                        <p className="text-sm text-gray-600">
-                          {t("dashboard.rating")}:{" "}
-                          {activeChannel?.healthDetails.quality_rating || "N/A"}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end">
-                      <span className="text-sm text-blue-600 font-medium">
-                        {t("dashboard.tier")}:{" "}
-                        {activeChannel?.healthDetails.messaging_limit === "TIER_250"
-                          ? "250 / day"
-                          : activeChannel?.healthDetails.messaging_limit === "TIER_1K"
-                          ? "1,000 / day"
-                          : activeChannel?.healthDetails.messaging_limit === "TIER_10K"
-                          ? "10,000 / day"
-                          : activeChannel?.healthDetails.messaging_limit === "TIER_100K"
-                          ? "100,000 / day"
-                          : activeChannel?.healthDetails.messaging_limit === "UNLIMITED" ||
-                            activeChannel?.healthDetails.messaging_limit === "TIER_UNLIMITED"
-                          ? "Unlimited"
-                          : activeChannel?.healthDetails.messaging_limit === "UNKNOWN" ||
-                            !activeChannel?.healthDetails.messaging_limit
-                          ? "Unconfirmed"
-                          : activeChannel?.healthDetails.messaging_limit}
-                      </span>
-                      {activeChannel?.lastHealthCheck && (
-                        <span className="text-xs text-gray-400 mt-0.5">
-                          Last checked{" "}
-                          {formatDistanceToNow(new Date(activeChannel.lastHealthCheck), { addSuffix: true })}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                ) : (
+                  <p className="py-20 text-center text-sm text-gray-500">
+                    No messages in this period yet.
+                  </p>
                 )}
+              </div>
 
-                {/* Performance Stats */}
-                <div className="grid grid-cols-2 gap-4 mt-4">
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <p className="text-lg font-bold text-gray-900">
-                      {activeChannel?.lastHealthCheck ? "100%" : "N/A"}
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      {t("dashboard.apiUptime")}
-                    </p>
-                  </div>
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <p className="text-lg font-bold text-gray-900">
-                      {activeChannel?.healthDetails.name_status || "N/A"}
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      {t("dashboard.apiStatus")}
-                    </p>
-                  </div>
+              <div className="rounded-xl border border-gray-200 bg-white p-5 lg:col-span-2">
+                <div className="mb-3 flex items-center justify-between">
+                  <h2 className="font-semibold text-gray-900">Recent conversations</h2>
+                  <Link
+                    href="/inbox"
+                    className="inline-flex items-center gap-1 text-sm text-green-700 hover:underline"
+                  >
+                    Open inbox <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
                 </div>
 
-                {/* Daily Limit */}
-                {(() => {
-                  const tierKey = activeChannel?.healthDetails.messaging_limit as string | undefined;
-                  const tierLimitMap: Record<string, number> = {
-                    TIER_250: 250,
-                    TIER_1K: 1000,
-                    TIER_10K: 10000,
-                    TIER_100K: 100000,
-                  };
-                  const isUnlimitedOrUnknown =
-                    !tierKey ||
-                    tierKey === "UNKNOWN" ||
-                    tierKey === "UNLIMITED" ||
-                    tierKey === "TIER_UNLIMITED";
-                  const dailyLimit = isUnlimitedOrUnknown ? null : (tierLimitMap[tierKey] ?? null);
-                  const todaySent = stats?.todayMessages || 0;
-                  const limitLabel =
-                    tierKey === "UNLIMITED" || tierKey === "TIER_UNLIMITED"
-                      ? "Unlimited"
-                      : isUnlimitedOrUnknown
-                      ? "Unconfirmed"
-                      : (dailyLimit ?? 0).toLocaleString();
-                  const progressPct =
-                    dailyLimit != null && dailyLimit > 0
-                      ? Math.min((todaySent / dailyLimit) * 100, 100)
-                      : 0;
-                  return (
-                    <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-700">
-                          {t("dashboard.dailyMessageLimit")}
-                        </span>
-                        <span className="text-sm text-gray-600">
-                          {todaySent} / {limitLabel}
-                        </span>
-                      </div>
-                      {dailyLimit != null && (
-                        <div className="w-full bg-yellow-200 rounded-full h-2">
-                          <div
-                            className="bg-yellow-500 h-2 rounded-full"
-                            style={{ width: `${progressPct}%` }}
-                          />
-                        </div>
-                      )}
-                      {isUnlimitedOrUnknown && tierKey !== "UNLIMITED" && tierKey !== "TIER_UNLIMITED" && (
-                        <p className="text-xs text-yellow-700 mt-1">
-                          Run a channel health check to confirm your messaging tier.
-                        </p>
-                      )}
-                    </div>
-                  );
-                })()}
+                {recent.length === 0 ? (
+                  <p className="py-16 text-center text-sm text-gray-500">No conversations yet.</p>
+                ) : (
+                  <ul className="divide-y divide-gray-100">
+                    {recent.map((conversation) => (
+                      <li key={conversation.id}>
+                        <Link href="/inbox" className="flex items-center gap-3 py-2.5">
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-green-50 text-sm font-medium text-green-700">
+                            {(conversation.contactName || conversation.contactPhone || "?")
+                              .charAt(0)
+                              .toUpperCase()}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-medium text-gray-900">
+                              {conversation.contactName || conversation.contactPhone}
+                            </span>
+                            <span className="block truncate text-xs text-gray-500">
+                              {conversation.lastMessageText}
+                            </span>
+                          </span>
+                          <span className="shrink-0 text-right text-xs text-gray-400">
+                            {conversation.lastMessageAt &&
+                              formatDistanceToNow(new Date(conversation.lastMessageAt), {
+                                addSuffix: true,
+                              })}
+                            {conversation.unreadCount > 0 && (
+                              <span className="mt-1 block font-semibold text-green-600">
+                                {conversation.unreadCount} new
+                              </span>
+                            )}
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </section>
+
+            {sandbox?.enabled && (
+              <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed border-green-300 bg-green-50 p-4">
+                <div className="flex items-center gap-3">
+                  <Bot className="h-5 w-5 text-green-700" />
+                  <p className="text-sm text-green-900">
+                    Sandbox mode: messages stay on this computer and customers are simulated.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  className="bg-white"
+                  disabled={simulateInbound.isPending}
+                  onClick={() => simulateInbound.mutate()}
+                >
+                  <MessageSquarePlus className="mr-2 h-4 w-4" />
+                  Simulate a customer message
+                </Button>
+              </section>
+            )}
+          </>
         )}
       </main>
     </div>

@@ -16,6 +16,7 @@ process.on("unhandledRejection", (reason) => {
   console.error("[Process] Unhandled promise rejection — server will keep running:", reason);
 });
 
+import "./sandbox";
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";

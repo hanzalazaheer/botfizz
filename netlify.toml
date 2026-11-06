@@ -1,0 +1,12 @@
+# Static live demo. It runs entirely in the browser with sample data.
+[build]
+  command = "npm run build:demo"
+  publish = "dist/public"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

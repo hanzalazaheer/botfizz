@@ -23,6 +23,9 @@ import { z } from "zod";
 import path from "path";
 import fs from "fs";
 
+const isAbsolutePath = (value?: string | null) =>
+  !!value && (value.startsWith("https") || value.startsWith("/"));
+
 export const panelConfigSchema = z.object({
   name: z.string().min(1, "Name is required"),
   tagline: z.string().optional(),
@@ -274,13 +277,13 @@ export const getBrandSettings = async (_req: Request, res: Response) => {
       currency: config.currency || "",
       country: config.country || "",
       supportEmail: config.supportEmail || "",
-      logo: config.logo?.startsWith("https")
+      logo: isAbsolutePath(config.logo)
         ? config.logo
         : `/uploads/${config.logo}`,
-      logo2: config.logo2?.startsWith("https")
+      logo2: isAbsolutePath(config.logo2)
         ? config.logo2
         : `/uploads/${config.logo2}`,  
-      favicon: config.favicon?.startsWith("https")
+      favicon: isAbsolutePath(config.favicon)
         ? config.favicon
         : `/uploads/${config.favicon}`,
       updatedAt: config.updatedAt?.toISOString() || new Date().toISOString(),
@@ -440,10 +443,10 @@ export const updateBrandSettingsOld = async (req: Request, res: Response) => {
       country: config.country || "",
       currency: config.currency || "",
       supportEmail: config.supportEmail || "",
-      logo: config.logo?.startsWith("https")
+      logo: isAbsolutePath(config.logo)
         ? config.logo
         : `/uploads/${config.logo}`,
-      favicon: config.favicon?.startsWith("https")
+      favicon: isAbsolutePath(config.favicon)
         ? config.favicon
         : `/uploads/${config.favicon}`,
       updatedAt: config.updatedAt?.toISOString() || new Date().toISOString(),
@@ -528,13 +531,13 @@ export const updateBrandSettings = async (req: Request, res: Response) => {
       country: config.country || "",
       currency: config.currency || "",
       supportEmail: config.supportEmail || "",
-      logo: config.logo?.startsWith("https")
+      logo: isAbsolutePath(config.logo)
         ? config.logo
         : `/uploads/${config.logo}`,
-      logo2: config.logo2?.startsWith("https")
+      logo2: isAbsolutePath(config.logo2)
         ? config.logo2
         : `/uploads/${config.logo2}`, // 👈 ADDED
-      favicon: config.favicon?.startsWith("https")
+      favicon: isAbsolutePath(config.favicon)
         ? config.favicon
         : `/uploads/${config.favicon}`,
       updatedAt: config.updatedAt?.toISOString() || new Date().toISOString(),

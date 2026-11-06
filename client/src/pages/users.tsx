@@ -13,7 +13,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { FaEllipsisH, FaEye, FaBan, FaSearch, FaCheck, FaCrown, FaEdit, FaFileExport } from "react-icons/fa";
+import { FaEllipsisH, FaEye, FaBan, FaSearch, FaCheck, FaEdit, FaFileExport } from "react-icons/fa";
 import EditUserModal from "@/components/modals/EditUserModal";
 import { PageNumbers } from "@/components/ui/page-numbers";
 import Header from "@/components/layout/header";
@@ -22,7 +22,6 @@ import { useTranslation } from "@/lib/i18n";
 import { useAuth } from "@/contexts/auth-context";
 import {isDemoUser, maskValue, maskPhone, maskName, maskEmail } from "@/utils/maskUtils";
 import AddUserModal from "@/components/modals/AddUserModal";
-import AssignPlanModal from "@/components/modals/AssignPlanModal";
 
 
 interface UserType {
@@ -75,10 +74,7 @@ const User: React.FC = () => {
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [openAddModal, setOpenAddModal] = useState(false);
   const { toast } = useToast();
-  const { user, userPlans } = useAuth();
-  const [plans, setPlans] = useState([]);
-  const [assignModalOpen, setAssignModalOpen] = useState(false);
-  const [selectedUserForPlan, setSelectedUserForPlan] = useState(null);
+  const { user } = useAuth();
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedUserForEdit, setSelectedUserForEdit] = useState<UserType | null>(null);
   const [pagination, setPagination] = useState<PaginationType>({
@@ -237,26 +233,10 @@ const User: React.FC = () => {
 
 
 
-const fetchPlans = async () => {
-  try {
-    const response = await apiRequest("GET", "/api/admin/plans");
-    const data = await response.json();
-    if (data.success) {
-      setPlans(data.data);
-    }
-  } catch (err) {
-    console.error("Plan fetch error:", err);
-  }
-};
 
 useEffect(() => {
-  fetchPlans();
 }, []);
 
-const openAssignPlanModal = (user: any) => {
-  setSelectedUserForPlan(user);
-  setAssignModalOpen(true);
-};
 
 const [exporting, setExporting] = useState(false);
 
@@ -589,13 +569,6 @@ const handleExportCSV = async () => {
                           <FaEye className="cursor-pointer hover:text-green-600" />
                         </Link>
 
-                         {/* PLAN ASSIGN DROPDOWN */}
-   <FaCrown
-  onClick={() => openAssignPlanModal(u)}
-  className="cursor-pointer text-yellow-500 hover:text-yellow-600"
-  title="Assign Plan"
-/>
-
                         {u.status === "active" ? (
                           <FaBan
                             onClick={() => handleToggleStatus(u)}
@@ -799,14 +772,6 @@ const handleExportCSV = async () => {
 />
 
 
-<AssignPlanModal
-  open={assignModalOpen}
-  onOpenChange={setAssignModalOpen}
-  user={selectedUserForPlan}
-  plans={plans}
-  subscriptions={userPlans}  
-  onSuccess={fetchUsers}
-/>
 
 <EditUserModal
   open={editModalOpen}

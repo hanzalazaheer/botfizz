@@ -28,9 +28,4 @@ export function registerWebhookRoutes(app: Express) {
   app.all("/webhook/:id", webhooksController.handleWebhook);
 
   // ==================== PAYMENT WEBHOOKS ====================
-  app.post('/webhooks/razorpay', webhooksController.razorpayWebhook);
-  app.post('/webhooks/stripe', webhooksController.stripeWebhook);
-  app.post('/webhooks/paypal', webhooksController.paypalWebhook);
-  app.post('/webhooks/paystack', webhooksController.paystackWebhook);
-  app.post('/webhooks/mercadopago', webhooksController.mercadopagoWebhook);
 } 

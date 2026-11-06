@@ -29,10 +29,7 @@ import { registerWhatsAppRoutes } from "./whatsapp.routes";
 import { registerWhatsappConfigRoutes } from "./whatsappConfig.routes";
 import { registerWebhookRoutes } from "./webhooks.routes";
 import { registerMessageRoutes } from "./messages.routes";
-import { registerPaymentsRoutes } from "./payment.routes";
 import { registerMessageLogsRoutes } from "./messages.logs.routes";
-import { registerPlansRoutes } from "./plans.routes";
-import { registerSubscriptionsRoutes } from "./subscriptions.routes";
 import {userRoutes} from "./user.route"
 import teamRoutes from "./team.routes";
 import authRoutes from "./auth.routes";
@@ -51,6 +48,7 @@ import { registerGroupRoutes } from "./group.routes";
 import { registerTrainingRoutes } from "./training.routes";
 import { registerLanguageRoutes } from "./language.routes";
 import { registerClientApiRoutes } from "./client-api.routes";
+import { registerSandboxRoutes } from "./sandbox.routes";
 import { registerRestApiV1Routes } from "./rest-api-v1.routes";
 
 export async function registerRoutes(app: Express, existingServer?: Server): Promise<Server> {
@@ -60,7 +58,6 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   // Register all route modules
   registerWidgetRoutes(app);
   registerGroupRoutes(app);
-  registerPlansRoutes(app);
   registerNotificationsRoutes(app);
 
   userRoutes(app);
@@ -83,12 +80,11 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   registerMessageRoutes(app);
   registerMessageLogsRoutes(app);
   registerPanelConfigRoutes(app)
-  registerPaymentsRoutes(app);
   registerTicketsRoutes(app);
-  registerSubscriptionsRoutes(app);
   registerTrainingRoutes(app);
   registerLanguageRoutes(app);
   registerClientApiRoutes(app);
+  registerSandboxRoutes(app);
   registerRestApiV1Routes(app);
   
   // Team management routes

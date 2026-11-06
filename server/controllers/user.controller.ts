@@ -21,7 +21,7 @@ import { resolveUserPermissions } from "../utils/role-permissions";
 
 
 // Default permissions 
-    const defaultPermissions = [
+export const defaultPermissions = [
       // Contacts
       'contacts:view',
       'contacts:create',
@@ -395,6 +395,7 @@ export const createUser = async (req: Request, res: Response) => {
       .returning();
 
     const user = newUser[0];
+
 
     // Generate OTP
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
