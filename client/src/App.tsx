@@ -8,7 +8,7 @@
  * ============================================================
  */
 
-import React, { useState, useEffect } from "react";
+import React, { lazy, Suspense, useState, useEffect } from "react";
 import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -22,54 +22,55 @@ import { useI18n } from "@/lib/i18n";
 import { markExplored } from "@/lib/explored";
 import NotFound from "@/pages/not-found";
 import LoginPage from "@/pages/login";
-import Dashboard from "@/pages/dashboard";
-import Contacts from "@/pages/contacts";
-import Campaigns from "@/pages/campaigns";
-import Templates from "@/pages/templates";
-import Inbox from "@/pages/inbox";
-import Automations from "@/pages/automations";
-import Analytics from "@/pages/analytics";
-import CampaignAnalytics from "@/pages/campaign-analytics";
-import Settings from "@/pages/settings";
-import Team from "@/pages/team";
 import Sidebar from "@/components/layout/sidebar";
-import Account from "./pages/account";
 import { AppLayout } from "./components/layout/AppLayout";
-import ChatbotBuilder from "./pages/chatbot-builder";
-import AddChatbotBuilder from "./pages/add-chatbot-builder";
-import WidgetBuilder from "./pages/widget-builder";
-import Websites from "./pages/websites";
 import Home from "./pages/Home";
 import LoadingAnimation from "./components/LoadingAnimation";
-import BotFlowBuilder from "./pages/BotFlowBuilder";
-import Workflows from "./pages/Workflows";
-import AIAssistant from "./pages/AIAssistant";
-import AutoResponses from "./pages/AutoResponses";
-import WABAConnection from "./pages/WABAConnection";
-import MultiNumber from "./pages/MultiNumbert";
-import Webhooks from "./pages/Webhooks";
-import QRCodes from "./pages/QRCodes";
-import CRMSystem from "./pages/CRMSystem";
-import LeadManagement from "./pages/LeadManagement";
-import BulkImport from "./pages/BulkImport";
-import Segmentation from "./pages/Segmentation";
-import HealthMonitor from "./pages/HealthMonitor";
-import Reports from "./pages/Reports";
-import Notifications from "./pages/Notifications";
-import UserNotifications from "./pages/UserNotifications";
-import ChatHub from "./pages/ChatHub";
-import User from "./pages/users";
-import ContactsManagements from "./pages/contacts-managements";
-import SupportTicketsNew from "./pages/support-tickets";
-import userDetails from "./pages/userDetails";
-import UserSupportTicketsNew from "./pages/user-support-tickets";
-import GroupsUI from "./pages/group-list";
 import MinimalLoader from "./components/MinimalLoader";
 import { ScrollToTop } from "./components/ScrollToTop";
-import LanguageManagement from "./pages/LanguageManagement";
-import SuperadminMessageLogs from "./pages/SuperadminMessageLogs";
-import ApiDocs from "./pages/api-docs";
-import ChannelsManagement from "./pages/channels-management";
+
+const Dashboard = lazy(() => import("@/pages/dashboard"));
+const Contacts = lazy(() => import("@/pages/contacts"));
+const Campaigns = lazy(() => import("@/pages/campaigns"));
+const Templates = lazy(() => import("@/pages/templates"));
+const Inbox = lazy(() => import("@/pages/inbox"));
+const Automations = lazy(() => import("@/pages/automations"));
+const Analytics = lazy(() => import("@/pages/analytics"));
+const CampaignAnalytics = lazy(() => import("@/pages/campaign-analytics"));
+const Settings = lazy(() => import("@/pages/settings"));
+const Team = lazy(() => import("@/pages/team"));
+const Account = lazy(() => import("./pages/account"));
+const ChatbotBuilder = lazy(() => import("./pages/chatbot-builder"));
+const AddChatbotBuilder = lazy(() => import("./pages/add-chatbot-builder"));
+const WidgetBuilder = lazy(() => import("./pages/widget-builder"));
+const Websites = lazy(() => import("./pages/websites"));
+const BotFlowBuilder = lazy(() => import("./pages/BotFlowBuilder"));
+const Workflows = lazy(() => import("./pages/Workflows"));
+const AIAssistant = lazy(() => import("./pages/AIAssistant"));
+const AutoResponses = lazy(() => import("./pages/AutoResponses"));
+const WABAConnection = lazy(() => import("./pages/WABAConnection"));
+const MultiNumber = lazy(() => import("./pages/MultiNumbert"));
+const Webhooks = lazy(() => import("./pages/Webhooks"));
+const QRCodes = lazy(() => import("./pages/QRCodes"));
+const CRMSystem = lazy(() => import("./pages/CRMSystem"));
+const LeadManagement = lazy(() => import("./pages/LeadManagement"));
+const BulkImport = lazy(() => import("./pages/BulkImport"));
+const Segmentation = lazy(() => import("./pages/Segmentation"));
+const HealthMonitor = lazy(() => import("./pages/HealthMonitor"));
+const Reports = lazy(() => import("./pages/Reports"));
+const Notifications = lazy(() => import("./pages/Notifications"));
+const UserNotifications = lazy(() => import("./pages/UserNotifications"));
+const ChatHub = lazy(() => import("./pages/ChatHub"));
+const User = lazy(() => import("./pages/users"));
+const ContactsManagements = lazy(() => import("./pages/contacts-managements"));
+const SupportTicketsNew = lazy(() => import("./pages/support-tickets"));
+const userDetails = lazy(() => import("./pages/userDetails"));
+const UserSupportTicketsNew = lazy(() => import("./pages/user-support-tickets"));
+const GroupsUI = lazy(() => import("./pages/group-list"));
+const LanguageManagement = lazy(() => import("./pages/LanguageManagement"));
+const SuperadminMessageLogs = lazy(() => import("./pages/SuperadminMessageLogs"));
+const ApiDocs = lazy(() => import("./pages/api-docs"));
+const ChannelsManagement = lazy(() => import("./pages/channels-management"));
 
 // Define route permissions mapping
 const ROUTE_PERMISSIONS: Record<string, string> = {
@@ -207,6 +208,7 @@ function ProtectedRoutes() {
     <div className="flex min-h-screen bg-white">
       <Sidebar />
       <div className="flex-1 lg:ml-64">
+        <Suspense fallback={<MinimalLoader onComplete={() => {}} duration={1500} color="green" />}>
         <Switch>
           <Route path="/dashboard">
             <Dashboard />
@@ -362,6 +364,7 @@ function ProtectedRoutes() {
           ))}
           <Route component={NotFound} />
         </Switch>
+        </Suspense>
       </div>
     </div>
   );
