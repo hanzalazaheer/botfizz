@@ -138,12 +138,43 @@ function FeatureVideo({ id, active }: { id: string; active: boolean }) {
   );
 }
 
+/** Plays only while on screen, so a long list doesn't download every clip at once. */
+function ListVideo({ id }: { id: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current!;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) video.play().catch(() => {});
+      else video.pause();
+    });
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) observer.observe(video);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <video
+      ref={videoRef}
+      src={`/showcase/${id}.mp4`}
+      poster={`/showcase/${id}.webp`}
+      muted
+      loop
+      playsInline
+      preload="none"
+      aria-hidden="true"
+    />
+  );
+}
+
 function FeatureStory({ tryHref }: { tryHref: (href: string) => string }) {
   const sectionRef = useRef<HTMLElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
+  const [compact] = useState(() => window.matchMedia("(max-width: 820px)").matches);
 
   useEffect(() => {
+    if (compact) return;
+
     const onScroll = () => {
       const box = sectionRef.current!.getBoundingClientRect();
       const travel = box.height - window.innerHeight;
@@ -162,9 +193,29 @@ function FeatureStory({ tryHref }: { tryHref: (href: string) => string }) {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
     };
-  }, []);
+  }, [compact]);
 
   const feature = FEATURES[active];
+
+  if (compact) {
+    return (
+      <section className="bf-story" id="features">
+        <div className="bf-story__list">
+          {FEATURES.map((item) => (
+            <article key={item.id}>
+              <p className="bf-eyebrow">{item.tag}</p>
+              <h3>{item.title}</h3>
+              <p>{item.text}</p>
+              <ListVideo id={item.id} />
+              <Link href={tryHref(item.href)} className="bf-button">
+                Try it live <ArrowRight size={18} />
+              </Link>
+            </article>
+          ))}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section
@@ -203,21 +254,6 @@ function FeatureStory({ tryHref }: { tryHref: (href: string) => string }) {
             ))}
           </div>
         </div>
-      </div>
-
-      {/* Small screens read the features as a simple list. */}
-      <div className="bf-story__list">
-        {FEATURES.map((item) => (
-          <article key={item.id}>
-            <p className="bf-eyebrow">{item.tag}</p>
-            <h3>{item.title}</h3>
-            <p>{item.text}</p>
-            <video src={`/showcase/${item.id}.mp4`} poster={`/showcase/${item.id}.webp`} muted loop autoPlay playsInline preload="none" aria-hidden="true" />
-            <Link href={tryHref(item.href)} className="bf-button">
-              Try it live <ArrowRight size={18} />
-            </Link>
-          </article>
-        ))}
       </div>
     </section>
   );
