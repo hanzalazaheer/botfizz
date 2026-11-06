@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BotFizz Final Year Report</title>
+  <meta name="description" content="Final year project report for BotFizz, Department of Software Engineering, University of Gujrat." />
+  <style>
+    :root { --bg: #050a08; --bar: #0b1511; --ink: #eef6f1; --dim: #9fb2a8; --green: #25d366; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+    header { position: sticky; top: 0; z-index: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 1rem; padding: 0.7rem 1rem; background: var(--bar); border-bottom: 1px solid rgba(190, 235, 210, 0.14); }
+    h1 { flex: 1 1 auto; margin: 0; font-size: 1rem; font-weight: 600; }
+    #count { color: var(--dim); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+    header a { padding: 0.35rem 0.9rem; border-radius: 999px; background: var(--green); color: #03220f; font-size: 0.9rem; font-weight: 600; text-decoration: none; }
+    main { display: grid; gap: 1rem; justify-items: center; padding: 1rem; }
+    .page { width: min(100%, 860px); aspect-ratio: 595 / 842; background: #fff; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5); }
+    canvas { display: block; width: 100%; height: 100%; }
+    #message { padding: 3rem 1rem; color: var(--dim); text-align: center; }
+    #message a { color: var(--green); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>BotFizz Final Year Report</h1>
+    <span id="count"></span>
+    <a href="BotFizz-Final-Year-Report.pdf" download>Download PDF</a>
+  </header>
+  <main id="pages"></main>
+  <p id="message">Loading the report…</p>
+  <noscript><p id="message">JavaScript is off. <a href="BotFizz-Final-Year-Report.pdf">Open the PDF directly</a>.</p></noscript>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    const FILE = "BotFizz-Final-Year-Report.pdf";
+    const message = document.getElementById("message");
+    const count = document.getElementById("count");
+    const pages = document.getElementById("pages");
+
+    function showFailure() {
+      message.innerHTML = `The preview couldn't load. <a href="${FILE}">Open the PDF directly</a>.`;
+    }
+
+    async function renderPage(pdf, number, holder) {
+      const page = await pdf.getPage(number);
+      const scale = (holder.clientWidth * Math.min(window.devicePixelRatio || 1, 2)) / page.getViewport({ scale: 1 }).width;
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement("canvas");
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      canvas.setAttribute("aria-label", `Page ${number}`);
+      await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+      holder.append(canvas);
+    }
+
+    async function start() {
+      if (!window.pdfjsLib) return showFailure();
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+      const pdf = await pdfjsLib.getDocument(FILE).promise;
+      message.remove();
+
+      // Pages render as they near the screen, so long reports stay light on phones.
+      const visible = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          visible.unobserve(entry.target);
+          renderPage(pdf, Number(entry.target.dataset.page), entry.target);
+        }
+      }, { rootMargin: "800px 0px" });
+
+      const onScreen = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) count.textContent = `Page ${entry.target.dataset.page} of ${pdf.numPages}`;
+        }
+      }, { rootMargin: "-50% 0px" });
+
+      for (let number = 1; number <= pdf.numPages; number++) {
+        const holder = document.createElement("div");
+        holder.className = "page";
+        holder.dataset.page = number;
+        pages.append(holder);
+        visible.observe(holder);
+        onScreen.observe(holder);
+      }
+    }
+
+    start().catch(showFailure);
+  </script>
+</body>
+</html>
