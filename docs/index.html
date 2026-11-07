@@ -58,7 +58,13 @@
       pdfjsLib.GlobalWorkerOptions.workerSrc =
         "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
-      const pdf = await pdfjsLib.getDocument(FILE).promise;
+      // Fetch only the parts each page needs, so the report opens quickly on slow connections.
+      const pdf = await pdfjsLib.getDocument({
+        url: FILE,
+        disableAutoFetch: true,
+        disableStream: true,
+        rangeChunkSize: 262144,
+      }).promise;
       message.remove();
 
       // Pages render as they near the screen, so long reports stay light on phones.
